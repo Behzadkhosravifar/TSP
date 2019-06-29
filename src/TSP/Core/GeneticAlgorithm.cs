@@ -5,8 +5,6 @@ using System.Linq;
 
 namespace TSP.Core
 {
-    
-
     public class GeneticAlgorithm
     {
         public Chromosome Elit { get; private set; }

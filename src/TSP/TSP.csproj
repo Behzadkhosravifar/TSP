@@ -92,7 +92,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Core\Chromosome.cs" />
-    <Compile Include="Core\CrossoverHelper.cs" />
     <Compile Include="Core\ElitismEventArg.cs" />
     <Compile Include="Core\GeneticAlgorithm.cs" />
     <Compile Include="Core\Random.cs" />
@@ -114,7 +113,6 @@
     <Compile Include="FormAbout.Designer.cs">
       <DependentUpon>FormAbout.cs</DependentUpon>
     </Compile>
-    <Compile Include="Core\MutationHelper.cs" />
     <Compile Include="ProcessorAffinityForm.cs">
       <SubType>Form</SubType>
     </Compile>
