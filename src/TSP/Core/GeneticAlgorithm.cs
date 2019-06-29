@@ -5,8 +5,11 @@ using System.Linq;
 
 namespace TSP.Core
 {
+    
+
     public class GeneticAlgorithm
     {
+        public Chromosome Elit { get; private set; }
         public int ChromosomeLenght { get; set; }
         public int PopulationLenght { get; set; }
         public int SelectionPercent { get; set; }
@@ -15,6 +18,7 @@ namespace TSP.Core
         public int RegenerationCounter { get; set; }
         public int ConvergenceRate { get; set; }
         public Chromosome[] Population { get; set; }
+        public event EventHandler<ElitismEventArg> ElitChromosomeFound;
 
 
         public GeneticAlgorithm(int len, int? popLenght = null,
@@ -46,9 +50,16 @@ namespace TSP.Core
         public bool Evaluation()
         {
             Population = Population.OrderBy(ch => ch.Fitness).ToArray(); // sort 
-            var elit = Population.First();
+            var bestCh = Population.First();
+
+            if (Elit == null || Elit.Fitness > bestCh.Fitness)
+            {
+                OnElitChromosomeFound(new ElitismEventArg(RegenerationCounter, bestCh));
+                Elit = bestCh;
+            }
+
             // if GA end condition occured then return false to stop generation;
-            if (Math.Abs(elit.Fitness) < 2)
+            if (Math.Abs(bestCh.Fitness) < 2)
             {
                 Debug.WriteLine("GA ended due to the best chromosome found :)");
                 return false; // stop GA
@@ -58,7 +69,7 @@ namespace TSP.Core
                 Debug.WriteLine("GA ended due to the limitation of regeneration!!!");
                 return false; // stop GA
             }
-            if (Population.Count(c => Math.Abs(c.Fitness - elit.Fitness) < 1) >= Math.Min((double)ConvergenceRate / 100, 0.9) * PopulationLenght)
+            if (Population.Count(c => Math.Abs(c.Fitness - bestCh.Fitness) < 1) >= Math.Min((double)ConvergenceRate / 100, 0.9) * PopulationLenght)
             {
                 // calculate histogram to seen chromosomes convergence            
                 Debug.WriteLine("GA ended due to the convergence of chromosomes :(");
@@ -197,5 +208,9 @@ namespace TSP.Core
             return (Population[rand.Next()], Population[rand.Next()]);
         }
 
+        protected virtual void OnElitChromosomeFound(ElitismEventArg e)
+        {
+            ElitChromosomeFound?.Invoke(this, e);
+        }
     }
 }

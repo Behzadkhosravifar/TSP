@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -39,8 +40,6 @@ namespace TSP
         int _startedTick = 0;
 
         public int CountCpuCore { get; set; } = 1;
-
-        // Number Population
         public int PopulationNumber { get; set; } = 500;
 
         // Number Keep Chromosome Size 
@@ -292,41 +291,11 @@ namespace TSP
                 _pPlistTgg[0].Clear();
             }
             //
-            //               N , Pop, SR, MR, ReGen, CR
-            Genetic = new GeneticAlgorithm(CounterCity, PopulationNumber, 10, 50, 1000, 75);
-            
+            //                                      N , Pop,              SR, MR, ReGen, CR
+            Genetic = new GeneticAlgorithm(CounterCity, PopulationNumber, 10, 50, 10000, 75);
+            Genetic.ElitChromosomeFound += Genetic_ElitChromosomeFound;
+            SetProgressBarMaxValue();
             var count = 0;
-            SetValue(0);
-            //toolStripProgressBar1.Value = 0;
-            //
-            SetGenerationText("0000");
-            //lblGeneration.Text = "0000";
-            //
-            if (CounterCity <= 5)
-                SetMaxValue(100);
-            //toolStripProgressBar1.Maximum = 100;
-            //
-            else if (CounterCity <= 15)
-                SetMaxValue(1000);
-            //toolStripProgressBar1.Maximum = 1000;
-            //
-            else if (CounterCity <= 30)
-                SetMaxValue(10000);
-            //toolStripProgressBar1.Maximum = 10000;
-            //
-            else if (CounterCity <= 40)
-                SetMaxValue(51000);
-            //toolStripProgressBar1.Maximum = 51000;
-            //
-            else if (CounterCity <= 60)
-                SetMaxValue(100000);
-            //toolStripProgressBar1.Maximum = 100000;
-            //
-            else
-                SetMaxValue(1000000);
-            //toolStripProgressBar1.Maximum = 1000000;
-            //
-            //
 
             do
             {
@@ -414,7 +383,98 @@ namespace TSP
             Stop();
         }
 
+        public void BestGa()
+        {
+            //
+            // set cities position
+            SetCitiesPosition(OvalShapeCity);
+            //
+            // initialize Parallel Computing for GA
+            CountCpuCore = CalcCountOfCpu(); // Calculate number of active core or CPU for this app
+            _tokenSource = new CancellationTokenSource();
+            //
+            // set Start TickTime
+            _startedTick = Environment.TickCount;
+
+            if (pGAToolStripMenuItem.Checked)  // clear Parallel points
+            {
+                _pPlistTfg[1].Clear();
+                _pPlistGfg[1].Clear();
+                _pPlistTgg[1].Clear();
+            }
+            else // clear Series points
+            {
+                _pPlistTfg[0].Clear();
+                _pPlistGfg[0].Clear();
+                _pPlistTgg[0].Clear();
+            }
+            //
+            //                                      N , Pop,              SR, MR, ReGen, CR
+            Genetic = new GeneticAlgorithm(CounterCity, PopulationNumber, 10, 50, 10000, 75);
+            Genetic.ElitChromosomeFound += Genetic_ElitChromosomeFound;
+            SetProgressBarMaxValue();
+            Genetic.Start();
+            //
+            //toolStripProgressBar1.Value = toolStripProgressBar1.Maximum;
+            SetValue(toolStripProgressBar1.Maximum);
+            //
+            // UnLock numUpDownPop
+            SetNumPopEnable(true);
+            //
+            // The END
+            Stop();
+        }
+
+        private void Genetic_ElitChromosomeFound(object sender, ElitismEventArg e)
+        {
+            SetTimeGraph(e.ElitChromosome.Fitness, e.GenerationCount, true);
+
+            if (dynamicalGraphicToolStripMenuItem.Checked) // Design if Graphically is ON
+            {
+                RefreshTour();
+            }
+            //
+            //-----------------------------------------------------------------------------
+            SetLenghtText(e.ElitChromosome.Fitness.ToString(CultureInfo.InvariantCulture));
+            //
+        }
+
         #region Generation Tools
+
+        private void SetProgressBarMaxValue()
+        {
+            SetValue(0);
+            //toolStripProgressBar1.Value = 0;
+            //
+            SetGenerationText("0000");
+            //lblGeneration.Text = "0000";
+            //
+            if (CounterCity <= 5)
+                SetMaxValue(100);
+            //toolStripProgressBar1.Maximum = 100;
+            //
+            else if (CounterCity <= 15)
+                SetMaxValue(1000);
+            //toolStripProgressBar1.Maximum = 1000;
+            //
+            else if (CounterCity <= 30)
+                SetMaxValue(10000);
+            //toolStripProgressBar1.Maximum = 10000;
+            //
+            else if (CounterCity <= 40)
+                SetMaxValue(51000);
+            //toolStripProgressBar1.Maximum = 51000;
+            //
+            else if (CounterCity <= 60)
+                SetMaxValue(100000);
+            //toolStripProgressBar1.Maximum = 100000;
+            //
+            else
+                SetMaxValue(1000000);
+            //toolStripProgressBar1.Maximum = 1000000;
+            //
+            //
+        }
 
         //find percent of All chromosome rate for delete Amiss(xRate) or Useful(Nkeep) chromosome
         //x_Rate According by chromosome fitness Average 
@@ -1165,12 +1225,12 @@ namespace TSP
             if (btnStartStop.Checked)
             {
                 btnPauseResume.Enabled = true;
-                btnStartStop.Text = "Stop Process ×";
+                btnStartStop.Text = @"Stop Process ×";
                 #region Start
                 if (OvalShapeCity.Count <= 1)
                 {
                     btnStartStop.Checked = false;
-                    MessageBox.Show("Please Create some cities for a tour!", "Empty Genome Exception",
+                    MessageBox.Show(@"Please Create some cities for a tour!", @"Empty Genome Exception",
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
 
                     return;
@@ -1217,14 +1277,14 @@ namespace TSP
                 {
                     if (!_runTime.IsAlive)
                     {
-                        _runTime = new Thread(Ga);
+                        _runTime = new Thread(BestGa);
                         SetThreadPriority(_runTime);
                         _runTime.Start();
                     }
                 }
                 catch
                 {
-                    _runTime = new Thread(Ga);
+                    _runTime = new Thread(BestGa);
                     SetThreadPriority(_runTime);
                     _runTime.Start();
                 }
